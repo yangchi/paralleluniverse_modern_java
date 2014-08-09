@@ -1,51 +1,72 @@
 package modernj;
 
-import co.paralleluniverse.fibers.Fiber;
+import co.paralleluniverse.actors.*;
+import co.paralleluniverse.fibers.*;
 import co.paralleluniverse.strands.Strand;
-import co.paralleluniverse.strands.channels.Channel;
-import co.paralleluniverse.strands.channels.Channels;
-import co.paralleluniverse.strands.channels.SelectAction;
-import static co.paralleluniverse.strands.channels.Selector.*;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
-    /**
-     *
-     * @param args
-     */
     public static void main (String[] args) throws Exception{
-        final Channel<Integer> ch1 = Channels.newChannel(0);
-        final Channel<String> ch2 = Channels.newChannel(0);
-        
-        new Fiber<Void>(() -> {
-            for (int i = 0; i < 10; i++){
-                Strand.sleep(100);
-                ch1.send(i);
-            }
-            ch1.close();
-        }).start();
-        
-        new Fiber<Void>(() -> {
-            for (int i = 0; i < 10; i++) {
-                Strand.sleep(130);
-                ch2.send(Character.toString((char)('a' + i)));
-            }
-            ch2.close();
-        }).start();
-        
-        new Fiber<Void>(() -> {
-            for (int i = 0; i < 10; i++) {
-                SelectAction<Object> sa = select(receive(ch1), receive(ch2));
-                switch (sa.index()) {
-                    case 0:
-                        System.out.println(sa.message() != null ? "Got a number: " + (int)sa.message() : "ch1 closed");
-                        break;
-                    case 1:
-                        System.out.println(sa.message() != null ? "Got a string: " + (String)sa.message() : "ch2 closed");
-                        break;
-                }
-            }
-        }).start().join();
+        new NaiveActor("naive").spawn();
+        Strand.sleep(Long.MAX_VALUE);
     }
+
+    static class NaiveActor extends BasicActor<Void, Void>{
+        
+        private ActorRef<String> myBadActor;
+
+        public NaiveActor(String name) {
+            super(name);
+        }
+        
+        @Override
+        protected Void doRun() throws InterruptedException, SuspendExecution {
+            spawnBadActor();
+            
+            int  count = 0;
+            while(true) {
+                receive(500, TimeUnit.MILLISECONDS);
+                myBadActor.send("hi from " + self() + " number " + (count++));
+            }
+        }
+        
+        private void spawnBadActor() {
+            myBadActor = new BadActor().spawn();
+            watch(myBadActor);
+        }
+        
+        @Override
+        protected Void handleLifecycleMessage(LifecycleMessage m) {
+            if (m instanceof ExitMessage && Objects.equals(((ExitMessage) m).getActor(), myBadActor)) {
+                System.out.println("My bad actor has just died of '" + ((ExitMessage) m).getCause() + "'. Restarting.");
+                spawnBadActor();
+            }
+            return super.handleLifecycleMessage(m);
+        }
+    }
+
+    static class BadActor extends BasicActor<String, Void>{
+        private int count;
+
+        @Override
+        protected Void doRun() throws InterruptedException, SuspendExecution {
+            System.out.println("(re)starting actor");
+            while(true) {
+                String m = receive(300, TimeUnit.MILLISECONDS);
+                if (m != null)
+                    System.out.println("Got a message: " + m);
+                System.out.println("I am but a lowly actor that sometimes fails: - " + (count++));
+                
+                if (ThreadLocalRandom.current().nextInt(30) == 0)
+                    throw new RuntimeException("darn");
+                
+                checkCodeSwap();
+            }
+        }
+    }
+    
     
 }

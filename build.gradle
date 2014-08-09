@@ -33,6 +33,7 @@ dependencies {
 
     compile 'com.google.guava:guava:17.0'
     
+    compile "co.paralleluniverse:quasar-actors:0.5.0"
     compile 'co.paralleluniverse:quasar-core:0.5.0:jdk8'
     quasar 'co.paralleluniverse:quasar-core:0.5.0:jdk8'
     
