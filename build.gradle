@@ -24,6 +24,7 @@ repositories {
 
 configurations{
     quasar
+	checker
 }
 
 // In this section you declare the dependencies for your production and test code
@@ -36,6 +37,9 @@ dependencies {
     compile "co.paralleluniverse:quasar-actors:0.5.0"
     compile 'co.paralleluniverse:quasar-core:0.5.0:jdk8'
     quasar 'co.paralleluniverse:quasar-core:0.5.0:jdk8'
+
+	checker 'org.checkerframework:jdk8:1.8.1'
+	compile 'org.checkerframework:checker:1.8.1'
     
     // Declare the dependency for your favourite test framework you want to use in your tests.
     // TestNG is also supported by the Gradle Test task. Just change the
@@ -48,4 +52,10 @@ run {
     systemProperty 'modernj.name', 'Yang'
     jvmArgs "-javaagent:${configurations.quasar.iterator().next()}"
     systemProperty "co.paralleluniverse.actors.moduleDir", "${rootProject.projectDir}/modules"
+}
+
+compileJava {
+	options.fork = true
+	options.forkOptions.jvmArgs = ["-Xbootclasspath/p:${configurations.checker.asPath}:${System.getenv('JAVA_HOME')}/lib/tools.jar"]
+	options.compilerArgs = ['-processor', 'org.checkerframework.checker.nullness.NullnessChecker,org.checkerframework.checker.units.UnitsChecker,org.checkerframework.checker.tainting.TaintingChecker']
 }

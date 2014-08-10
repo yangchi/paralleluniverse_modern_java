@@ -1,73 +1,18 @@
 package modernj;
 
-import co.paralleluniverse.actors.*;
-import co.paralleluniverse.fibers.*;
-import co.paralleluniverse.strands.Strand;
-import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import org.checkerframework.checker.units.qual.*;
 
 public class Main {
+    @SuppressWarnings("unsafe") private static final @m int m = (@m int)1;
+    @SuppressWarnings("unsafe") private static final @s int s = (@s int)1;
 
-    public static void main (String[] args) throws Exception{
-        new NaiveActor("naive").spawn();
-        Strand.sleep(Long.MAX_VALUE);
+    public static void main(String[] args) {
+        @m double meters = 5.0 * m;
+        @s double seconds = 2.0 * s;
+        // @kmPERh double speed = meters / seconds; // this won't compile
+        @mPERs double speed = meters / seconds;
+        
+        System.out.println("Speed: " + speed);
+        
     }
-
-    static class NaiveActor extends BasicActor<Void, Void>{
-        
-        private ActorRef<String> myBadActor;
-
-        public NaiveActor(String name) {
-            super(name);
-        }
-        
-        @Override
-        protected Void doRun() throws InterruptedException, SuspendExecution {
-            spawnBadActor();
-            
-            int  count = 0;
-            while(true) {
-                receive(500, TimeUnit.MILLISECONDS);
-                myBadActor.send("hi from " + self() + " number " + (count++));
-            }
-        }
-        
-        private void spawnBadActor() {
-            myBadActor = new BadActor().spawn();
-            watch(myBadActor);
-        }
-        
-        @Override
-        protected Void handleLifecycleMessage(LifecycleMessage m) {
-            if (m instanceof ExitMessage && Objects.equals(((ExitMessage) m).getActor(), myBadActor)) {
-                System.out.println("My bad actor has just died of '" + ((ExitMessage) m).getCause() + "'. Restarting.");
-                spawnBadActor();
-            }
-            return super.handleLifecycleMessage(m);
-        }
-    }
-
-    @Upgrade
-    static class BadActor extends BasicActor<String, Void>{
-        private int count;
-
-        @Override
-        protected Void doRun() throws InterruptedException, SuspendExecution {
-            System.out.println("(re)starting actor");
-            while(true) {
-                String m = receive(300, TimeUnit.MILLISECONDS);
-                if (m != null)
-                    System.out.println("Got a message: " + m);
-                System.out.println("I am but a lowly actor that sometimes fails: - " + (count++));
-                
-                if (ThreadLocalRandom.current().nextInt(100) == 0)
-                    throw new RuntimeException("darn");
-                
-                checkCodeSwap();
-            }
-        }
-    }
-    
-    
 }
