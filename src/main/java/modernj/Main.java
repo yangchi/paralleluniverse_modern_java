@@ -48,6 +48,7 @@ public class Main {
         }
     }
 
+    @Upgrade
     static class BadActor extends BasicActor<String, Void>{
         private int count;
 
@@ -60,7 +61,7 @@ public class Main {
                     System.out.println("Got a message: " + m);
                 System.out.println("I am but a lowly actor that sometimes fails: - " + (count++));
                 
-                if (ThreadLocalRandom.current().nextInt(30) == 0)
+                if (ThreadLocalRandom.current().nextInt(100) == 0)
                     throw new RuntimeException("darn");
                 
                 checkCodeSwap();

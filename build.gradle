@@ -47,4 +47,5 @@ dependencies {
 run {
     systemProperty 'modernj.name', 'Yang'
     jvmArgs "-javaagent:${configurations.quasar.iterator().next()}"
+    systemProperty "co.paralleluniverse.actors.moduleDir", "${rootProject.projectDir}/modules"
 }
